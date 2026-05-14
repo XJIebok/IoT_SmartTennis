@@ -38,3 +38,20 @@ body {
 .sensor-details p {
     margin: 6px 0;
 }
+/* Кнопка автообновления */
+.toggle-button {
+    display: block;
+    width: 500px;
+    margin: 20px auto;
+    padding: 12px;
+    font-size: 17px;
+    font-weight: bold;
+    border: 2px solid #333;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.toggle-button:hover {
+    background: #f0f0f0;
+}

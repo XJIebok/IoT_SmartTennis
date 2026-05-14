@@ -1,14 +1,16 @@
 let selectedThing = null;
+let lastSensorsData = [];
+let autoUpdateEnabled = true;
+let updateInterval = null;
 
 const container = document.getElementById("sensors_container");
+const toggleButton = document.getElementById("toggle_update");
 
 const sensorUrls = [
     "/connect_camera",
     "/connect_line_sensor",
     "/connect_net_sensor"
 ];
-
-let lastSensorsData = [];
 
 
 function formatValue(value) {
@@ -88,5 +90,34 @@ function updateData() {
 }
 
 
-updateData();
-setInterval(updateData, 1000);
+function startAutoUpdate() {
+    updateData();
+
+    updateInterval = setInterval(updateData, 1000);
+    autoUpdateEnabled = true;
+
+    toggleButton.innerText = "Автообновление: включено";
+}
+
+
+function stopAutoUpdate() {
+    clearInterval(updateInterval);
+    updateInterval = null;
+    autoUpdateEnabled = false;
+
+    toggleButton.innerText = "Автообновление: выключено";
+}
+
+
+function toggleAutoUpdate() {
+    if (autoUpdateEnabled) {
+        stopAutoUpdate();
+    } else {
+        startAutoUpdate();
+    }
+}
+
+
+toggleButton.onclick = toggleAutoUpdate;
+
+startAutoUpdate();
