@@ -209,8 +209,8 @@ class Player:
 
 # Класс для Табло со счётом
 class Scoreboard(Thing):
-    def __init__(self, name: str, status: str):
-        super().__init__(name, status)
+    def __init__(self, device_id: int, name: str, status: str):
+        super().__init__(device_id, name, status)
         self.player1_points = 0
         self.player2_points = 0
         self.player1_games = 0
@@ -241,8 +241,8 @@ class Scoreboard(Thing):
 
 # Класс Динамиков
 class Speaker(Thing):
-    def __init__(self, name: str, status: str):
-        super().__init__(name, status)
+    def __init__(self, device_id: int, name: str, status: str):
+        super().__init__(device_id, name, status)
         self.volume = 70
         self.sound_type = "signal"
         self.is_active = False
@@ -280,8 +280,8 @@ class Database:
 
 # Класс Главного конроллера
 class MainController(Thing):
-    def __init__(self, name: str, status: str):
-        super().__init__(name, status)
+    def __init__(self, device_id: int, name: str, status: str):
+        super().__init__(device_id, name, status)
         self.match_status = "waiting"
         self.current_set = 1
         self.current_game = 1
