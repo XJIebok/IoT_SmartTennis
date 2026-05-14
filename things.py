@@ -1,79 +1,186 @@
+import random
+
 from abc import ABC, abstractmethod
 
 # Абстрактный класс объекта
 class Thing(ABC):
-    def __init__(self, name: str, status: str):
+    def __init__(self, device_id: int, name: str, status: str):
+        self.id = device_id
         self.name = name
         self.status = status
-        print(f"Создан объект Thing: {self.name}, статус: {self.status}")
-    # Абстрактный метод подключения объекта
+        print(f"Создан объект Thing: id={self.id}, name={self.name}, status={self.status}")
+
+    def get_info(self):
+        print(f"{self.name}: метод get_info() запущен")
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status
+        }
+
     @abstractmethod
     def connect(self):
-        print(f"{self.name}: подключение выполнено")
+        print(f"{self.name}: подключение начато")
 
 # Класс Сенсора
 class Sensor(Thing):
-    def __init__(self, name: str, status: str, location: str):
-        super().__init__(name, status)
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status)
         self.location = location
         self.last_value = None
-        print(f"Создан датчик Sensor: {self.name}, расположение: {self.location}")
+        print(f"Создан датчик Sensor: {self.name}, location={self.location}")
 
     def connect(self):
         super().connect()
         print(f"{self.name}: датчик подключен")
+        self.detect_event()
+        return self.send_data()
 
+    @abstractmethod
     def detect_event(self):
-        print(f"{self.name}: метод detect_event() запущен")
+        pass
 
     def send_data(self):
         print(f"{self.name}: метод send_data() запущен")
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status,
+            "location": self.location,
+            "last_value": self.last_value
+        }
 
-# Класс Датчика качания сетки
+# Класс Камеры корта
+class CourtCamera(Sensor):
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status, location)
+        self.frame_id = 0
+        self.screen_ball_position = None
+        self.is_ball_detected = False
+        print(f"Создан CourtCamera: {self.name}")
+
+    def capture_frame(self):
+        self.frame_id += 1
+        print(f"{self.name}: метод capture_frame() запущен, frame_id={self.frame_id}")
+
+    def detect_ball_on_frame(self):
+        self.is_ball_detected = random.choice([True, False])
+
+        if self.is_ball_detected:
+            self.screen_ball_position = (
+                random.randint(0, 1920),
+                random.randint(0, 1080)
+            )
+        else:
+            self.screen_ball_position = None
+
+        self.last_value = str(self.screen_ball_position)
+        print(
+            f"{self.name}: метод detect_ball_on_frame() запущен. "
+            f"Мяч обнаружен: {self.is_ball_detected}, "
+            f"позиция на экране: {self.screen_ball_position}"
+        )
+
+    def detect_event(self):
+        print(f"{self.name}: метод detect_event() запущен")
+        self.capture_frame()
+        self.detect_ball_on_frame()
+
+    def send_data(self):
+        data = super().send_data()
+        data.update({
+            "frame_id": self.frame_id,
+            "screen_ball_position": self.screen_ball_position,
+            "is_ball_detected": self.is_ball_detected
+        })
+        return data
+
+# Класс Лазерного сенсора по периметру корта
+class LineSensor(Sensor):
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status, location)
+        self.line_type = "side line"
+        self.triggered = False
+        self.impact_coordinate = None
+        self.signal_strength = 0.0
+        print(f"Создан LineSensor: {self.name}")
+
+    def detect_impact(self):
+        self.triggered = random.choice([True, False])
+
+        if self.triggered:
+            self.impact_coordinate = (
+                random.randint(0, 100),
+                random.randint(0, 50)
+            )
+            self.signal_strength = round(random.uniform(0.1, 10.0), 2)
+        else:
+            self.impact_coordinate = None
+            self.signal_strength = 0.0
+
+        self.last_value = str(self.impact_coordinate)
+        print(
+            f"{self.name}: метод detect_impact() запущен. "
+            f"Срабатывание: {self.triggered}, "
+            f"координата: {self.impact_coordinate}, "
+            f"сила сигнала: {self.signal_strength}"
+        )
+
+    def detect_event(self):
+        print(f"{self.name}: метод detect_event() запущен")
+        self.detect_impact()
+
+    def send_data(self):
+        data = super().send_data()
+        data.update({
+            "line_type": self.line_type,
+            "triggered": self.triggered,
+            "impact_coordinate": self.impact_coordinate,
+            "signal_strength": self.signal_strength
+        })
+        return data
+
+# Класс Сенсора натяжения сетки
 class NetSensor(Sensor):
-    def __init__(self, name: str, status: str, location: str):
-        super().__init__(name, status, location)
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status, location)
         self.tension_level = 0.0
         self.vibration_level = 0.0
         self.net_contact = False
         print(f"Создан NetSensor: {self.name}")
 
     def detect_vibration(self):
-        print(f"{self.name}: метод detect_vibration() запущен")
+        self.tension_level = round(random.uniform(40.0, 60.0), 2)
+        self.vibration_level = round(random.uniform(0.0, 10.0), 2)
+
+        print(
+            f"{self.name}: метод detect_vibration() запущен. "
+            f"Натяжение: {self.tension_level}, "
+            f"вибрация: {self.vibration_level}"
+        )
 
     def detect_net_contact(self):
-        print(f"{self.name}: метод detect_net_contact() запущен")
+        self.net_contact = self.vibration_level > 6.5
+        self.last_value = str(self.net_contact)
 
-# Класс Камеры корта для отслеживания мяча
-class CourtCamera(Sensor):
-    def __init__(self, name: str, status: str, location: str):
-        super().__init__(name, status, location)
-        self.resolution = "1920x1080"
-        self.fps = 60
-        self.ball_position = None
-        self.bounce_point = None
-        print(f"Создан CourtCamera: {self.name}")
+        print(
+            f"{self.name}: метод detect_net_contact() запущен. "
+            f"Касание сетки: {self.net_contact}"
+        )
 
-    def track_ball(self):
-        print(f"{self.name}: метод track_ball() запущен")
+    def detect_event(self):
+        print(f"{self.name}: метод detect_event() запущен")
+        self.detect_vibration()
+        self.detect_net_contact()
 
-    def detect_bounce_point(self):
-        print(f"{self.name}: метод detect_bounce_point() запущен")
-
-# Класс датчика разметки игрового поля
-class LineSensor(Sensor):
-    def __init__(self, name: str, status: str, location: str):
-        super().__init__(name, status, location)
-        self.line_type = "side line"
-        self.triggered = False
-        self.impact_position = None
-        print(f"Создан LineSensor: {self.name}")
-
-    def detect_impact(self):
-        print(f"{self.name}: метод detect_impact() запущен")
-
-    def detect_in_out(self):
-        print(f"{self.name}: метод detect_in_out() запущен")
+    def send_data(self):
+        data = super().send_data()
+        data.update({
+            "tension_level": self.tension_level,
+            "vibration_level": self.vibration_level,
+            "net_contact": self.net_contact
+        })
+        return data
 
 # Класс Игрока
 class Player:
