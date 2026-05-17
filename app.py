@@ -23,13 +23,25 @@ net_sensor = things.NetSensor(
     status="online",
     location="сетка"
 )
+scoreboard = things.Scoreboard(
+    device_id=4,
+    name="Электронное табло",
+    status="online",
+    location="центральная зона корта"
+)
+speaker = things.Speaker(
+    device_id=5,
+    name="Звуковая система",
+    status="online",
+    location="зона судьи"
+)
 
-
+# Лаба 2
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
+# Лаба 3
 @app.route("/connect_camera")
 def connect_camera():
     data = camera.connect()
@@ -46,6 +58,9 @@ def connect_line_sensor():
 def connect_net_sensor():
     data = net_sensor.connect()
     return jsonify(data)
+
+# Лаба 4
+
 
 
 if __name__ == "__main__":

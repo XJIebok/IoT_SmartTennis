@@ -38,7 +38,7 @@ function getSensorData(dataUrl) {
     });
 }
 
-
+// Отрисовка данных с датчиков
 function renderSensors(sensors) {
     container.innerHTML = "";
 

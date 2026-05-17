@@ -2,7 +2,7 @@ import random
 
 from abc import ABC, abstractmethod
 
-# Абстрактный класс объекта
+# Абстрактный класс вещи
 class Thing(ABC):
     def __init__(self, device_id: int, name: str, status: str):
         self.id = device_id
@@ -17,6 +17,27 @@ class Thing(ABC):
             "name": self.name,
             "status": self.status
         }
+    # Изменение статуса Вещи
+    def set_status(self, status: str):
+        allowed_statuses = ["online", "offline", "maintenance"]
+
+        if status not in allowed_statuses:
+            print(f"{self.name}: ошибка изменения статуса. Недопустимый статус: {status}")
+            return {
+                "result": "error",
+                "message": f"Недопустимый статус: {status}",
+                "thing": self.get_info()
+            }
+
+        self.status = status
+
+        print(f"{self.name}: статус изменён на {self.status}")
+
+        return {
+            "result": "success",
+            "message": f"Статус изменён на {self.status}",
+            "thing": self.get_info()
+        }
 
     @abstractmethod
     def connect(self):
@@ -30,16 +51,22 @@ class Sensor(Thing):
         self.last_value = None
         print(f"Создан датчик Sensor: {self.name}, location={self.location}")
 
+    # Метод, в котором генерируется и отправляются данные с датчика
     def connect(self):
         super().connect()
+        # Если статус не "онлайн", то генерироваться показатели не будут
+        if self.status != "online":
+            print(f"{self.name}: датчик не активен, текущий статус: {self.status}")
+            return self.send_data()
+
         print(f"{self.name}: датчик подключен")
         self.detect_event()
         return self.send_data()
-
+    # Метод, генерирующий все данные для датчиков
     @abstractmethod
     def detect_event(self):
         pass
-
+    # Метод, отправляющий данные с датчика
     def send_data(self):
         print(f"{self.name}: метод send_data() запущен")
         return {
@@ -58,11 +85,11 @@ class CourtCamera(Sensor):
         self.screen_ball_position = None
         self.is_ball_detected = False
         print(f"Создан CourtCamera: {self.name}")
-
+    # Номер текущего кадра на камере
     def capture_frame(self):
         self.frame_id += 1
         print(f"{self.name}: метод capture_frame() запущен, frame_id={self.frame_id}")
-
+    # Гненерация местоположения мяча на камере
     def detect_ball_on_frame(self):
         self.is_ball_detected = random.choice([True, False])
 
@@ -104,7 +131,7 @@ class LineSensor(Sensor):
         self.impact_coordinate = None
         self.signal_strength = 0.0
         print(f"Создан LineSensor: {self.name}")
-
+    # Генерация, попал ли мяч на линию поля
     def detect_impact(self):
         self.triggered = random.choice([True, False])
 
@@ -148,7 +175,7 @@ class NetSensor(Sensor):
         self.vibration_level = 0.0
         self.net_contact = False
         print(f"Создан NetSensor: {self.name}")
-
+    # Генерация вибрации сетки
     def detect_vibration(self):
         self.tension_level = round(random.uniform(40.0, 60.0), 2)
         self.vibration_level = round(random.uniform(0.0, 10.0), 2)
@@ -158,7 +185,7 @@ class NetSensor(Sensor):
             f"Натяжение: {self.tension_level}, "
             f"вибрация: {self.vibration_level}"
         )
-
+    # Получение касания сетки
     def detect_net_contact(self):
         self.net_contact = self.vibration_level > 6.5
         self.last_value = str(self.net_contact)
@@ -181,6 +208,165 @@ class NetSensor(Sensor):
             "net_contact": self.net_contact
         })
         return data
+
+
+# Класс Динамиков
+class Speaker(Thing):
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status)
+        self.location = location
+        self.volume = 70
+        print(f"Создан Speaker: {self.name}")
+
+    def connect(self):
+        super().connect()
+        print(f"{self.name}: данные звуковой системы переданы")
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status,
+            "location": self.location,
+            "volume": self.volume
+        }
+
+    def play_signal(self, sound_type: str, duration: int):
+        if self.status != "online":
+            return {
+                "result": "error",
+                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+            }
+        print(
+            f"{self.name}: метод play_signal() запущен. "
+            f"Тип сигнала: {sound_type}, "
+            f"длительность: {duration} секунд, "
+            f"громкость: {self.volume}"
+        )
+
+        return {
+            "result": "success",
+            "message": f"Сигнал '{sound_type}' запущен на {duration} секунд",
+            "sound_type": sound_type,
+            "duration": duration,
+            "volume": self.volume,
+            "speaker": self.connect()
+        }
+
+    def set_volume(self, volume: int):
+        if self.status != "online":
+            return {
+                "result": "error",
+                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+            }
+        self.volume = volume
+
+        print(
+            f"{self.name}: метод set_volume() запущен. "
+            f"Новая громкость: {self.volume}"
+        )
+
+        return {
+            "result": "success",
+            "message": f"Громкость изменена на {volume}",
+            "speaker": self.connect()
+        }
+
+# Класс для Табло со счётом
+class Scoreboard(Thing):
+    def __init__(self, device_id: int, name: str, status: str, location: str):
+        super().__init__(device_id, name, status)
+        self.location = location
+        self.score = {
+            "points": [0, 0],
+            "games": [0, 0],
+            "sets": [0, 0]
+        }
+        self.match_status = "not started"
+        print(f"Создано табло Scoreboard: {self.name}")
+
+    def connect(self):
+        super().connect()
+        print(f"{self.name}: данные табло переданы")
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status,
+            "location": self.location,
+            "score": self.score,
+            "match_status": self.match_status
+        }
+
+    def update_score(self, score_type: str, player1_score: int, player2_score: int):
+        if self.status != "online":
+            return {
+                "result": "error",
+                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+            }
+        score_types = {
+            "sets": "сеты",
+            "games": "геймы",
+            "points": "очки"
+        }
+
+        if score_type not in score_types:
+            print(f"{self.name}: ошибка обновления счёта. Неизвестный тип счёта: {score_type}")
+            return {
+                "result": "error",
+                "message": f"Неизвестный тип счёта: {score_type}",
+                "scoreboard": self.connect()
+            }
+
+        self.score[score_type] = [player1_score, player2_score]
+
+        print(
+            f"{self.name}: {score_types[score_type]} обновлены: "
+            f"{self.score[score_type]}"
+        )
+
+        return {
+            "result": "success",
+            "message": f"{score_types[score_type]} обновлены",
+            "scoreboard": self.connect()
+        }
+
+    def set_match_status(self, match_status: str):
+        if self.status != "online":
+            return {
+                "result": "error",
+                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+            }
+        self.match_status = match_status
+
+        print(
+            f"{self.name}: метод set_match_status() запущен. "
+            f"Статус матча: {self.match_status}"
+        )
+
+        return {
+            "result": "success",
+            "message": f"Статус матча изменён на {match_status}",
+            "scoreboard": self.connect()
+        }
+
+    def reset_score(self):
+        if self.status != "online":
+            return {
+                "result": "error",
+                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+            }
+        self.score = {
+            "points": [0, 0],
+            "games": [0, 0],
+            "sets": [0, 0]
+        }
+        self.match_status = "not started"
+
+        print(f"{self.name}: метод reset_score() запущен. Счёт сброшен")
+
+        return {
+            "result": "success",
+            "message": "Счёт сброшен",
+            "scoreboard": self.connect()
+        }
 
 # Класс Игрока
 class Player:
@@ -206,60 +392,6 @@ class Player:
 
     def reset_points(self):
         print(f"{self.name}: метод reset_points() запущен")
-
-# Класс для Табло со счётом
-class Scoreboard(Thing):
-    def __init__(self, device_id: int, name: str, status: str):
-        super().__init__(device_id, name, status)
-        self.player1_points = 0
-        self.player2_points = 0
-        self.player1_games = 0
-        self.player2_games = 0
-        self.player1_sets = 0
-        self.player2_sets = 0
-        self.match_status = "not started"
-        print(f"Создано табло Scoreboard: {self.name}")
-
-    def connect(self):
-        super().connect()
-        print(f"{self.name}: табло подключено")
-
-    def update_points(self):
-        print(f"{self.name}: метод update_points() запущен")
-
-    def update_games(self):
-        print(f"{self.name}: метод update_games() запущен")
-
-    def update_sets(self):
-        print(f"{self.name}: метод update_sets() запущен")
-
-    def display_score(self):
-        print(f"{self.name}: метод display_score() запущен")
-
-    def reset_game_points(self):
-        print(f"{self.name}: метод reset_game_points() запущен")
-
-# Класс Динамиков
-class Speaker(Thing):
-    def __init__(self, device_id: int, name: str, status: str):
-        super().__init__(device_id, name, status)
-        self.volume = 70
-        self.sound_type = "signal"
-        self.is_active = False
-        print(f"Создан Speaker: {self.name}")
-
-    def connect(self):
-        super().connect()
-        print(f"{self.name}: звуковая система подключена")
-
-    def play_signal(self):
-        print(f"{self.name}: метод play_signal() запущен")
-
-    def announce_event(self):
-        print(f"{self.name}: метод announce_event() запущен")
-
-    def stop_signal(self):
-        print(f"{self.name}: метод stop_signal() запущен")
 
 # Класс Базы данных
 class Database:
