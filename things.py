@@ -35,7 +35,7 @@ class Thing(ABC):
 
         return {
             "result": "success",
-            "message": f"Статус изменён на {self.status}",
+            "message": f"Статус {self.name} изменён на {self.status}",
             "thing": self.get_info()
         }
 

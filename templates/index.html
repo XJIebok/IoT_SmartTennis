@@ -13,6 +13,30 @@
     <button id="toggle_update" class="toggle-button">
         Автообновление: включено
     </button>
-    <div id="sensors_container"></div>
+    <template id="thing_card_template">
+        <div class="thing-card">
+            <div class="thing-header">
+                <div class="card-info">
+                    <div><strong>ID:</strong> <span class="thing-id"></span></div>
+                    <div><strong>NAME:</strong> <span class="thing-name"></span></div>
+                </div>
+
+                <div class="card-status">
+                    <strong>STATUS:</strong>
+                    <span class="thing-status"></span>
+                </div>
+
+                <button class="power-btn" aria-label="Включить/Выключить">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2v10M16.24 7.76a6 6 0 1 1-8.48 0" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="thing-details"></div>
+        </div>
+    </template>
+
+    <div id="things_container"></div>
 </body>
 </html>

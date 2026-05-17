@@ -1,17 +1,22 @@
-let selectedThing = null;
+
 let lastSensorsData = [];
 let autoUpdateEnabled = true;
 let updateInterval = null;
 
-const container = document.getElementById("sensors_container");
 const toggleButton = document.getElementById("toggle_update");
 
-const sensorUrls = [
-    "/connect_camera",
-    "/connect_line_sensor",
-    "/connect_net_sensor"
-];
+let selectedThing = null;
+let lastThingsData = [];
 
+const container = document.getElementById("things_container");
+
+const things = [
+    { deviceName: "camera", url: "/connect_camera" },
+    { deviceName: "line_sensor", url: "/connect_line_sensor" },
+    { deviceName: "net_sensor", url: "/connect_net_sensor" },
+    { deviceName: "scoreboard", url: "/connect_scoreboard" },
+    { deviceName: "speaker", url: "/connect_speaker" }
+];
 
 function formatValue(value) {
     if (value === null || value === undefined) {
@@ -26,66 +31,103 @@ function formatValue(value) {
         return value ? "да" : "нет";
     }
 
+    if (typeof value === "object") {
+        return JSON.stringify(value);
+    }
+
     return value;
 }
 
-
-function getSensorData(dataUrl) {
-    return $.ajax({
-        type: "GET",
-        url: dataUrl,
-        dataType: "json"
-    });
-}
-
 // Отрисовка данных с датчиков
-function renderSensors(sensors) {
+function renderThings(thingsData) {
     container.innerHTML = "";
 
-    sensors.forEach((sensor) => {
-        const sensorBlock = document.createElement("div");
-        sensorBlock.className = "sensor-block";
+    const template = document.getElementById("thing_card_template");
 
-        const button = document.createElement("button");
-        button.className = "sensor-button";
-        button.innerText = sensor.name;
+    thingsData.forEach((thing) => {
+        const card = template.content.cloneNode(true);
 
-        button.onclick = function () {
-            if (selectedThing === sensor.id) {
-                selectedThing = null;
-            } else {
-                selectedThing = sensor.id;
-            }
+        const thingCard = card.querySelector(".thing-card");
+        const header = card.querySelector(".thing-header");
+        const idElement = card.querySelector(".thing-id");
+        const nameElement = card.querySelector(".thing-name");
+        const statusElement = card.querySelector(".thing-status");
+        const powerButton = card.querySelector(".power-btn");
+        const details = card.querySelector(".thing-details");
 
-            renderSensors(lastSensorsData);
+        idElement.textContent = thing.id;
+        nameElement.textContent = thing.name;
+        statusElement.textContent = thing.status;
+
+        statusElement.className = "thing-status";
+
+        if (thing.status === "online") {
+            statusElement.classList.add("status-online");
+        } else if (thing.status === "offline") {
+            statusElement.classList.add("status-offline");
+        } else {
+            statusElement.classList.add("status-maintenance");
+        }
+
+        powerButton.onclick = function (event) {
+            event.stopPropagation();
+
+            const newStatus = thing.status === "online" ? "offline" : "online";
+            setDeviceStatus(thing.deviceName, newStatus);
         };
 
-        sensorBlock.appendChild(button);
+        header.onclick = function () {
+            if (selectedThing === thing.id) {
+                selectedThing = null;
+            } else {
+                selectedThing = thing.id;
+            }
 
-        if (selectedThing === sensor.id) {
-            const details = document.createElement("div");
-            details.className = "sensor-details";
+            renderThings(lastThingsData);
+        };
 
-            Object.entries(sensor).forEach(([key, value]) => {
+        if (selectedThing === thing.id) {
+            details.innerHTML = "";
+
+            Object.entries(thing).forEach(([key, value]) => {
+                if (key === "deviceName") {
+                    return;
+                }
+
                 const p = document.createElement("p");
-                p.innerText = `${key}: ${formatValue(value)}`;
+                p.textContent = `${key}: ${formatValue(value)}`;
                 details.appendChild(p);
             });
 
-            sensorBlock.appendChild(details);
+            details.style.display = "block";
+        } else {
+            details.style.display = "none";
         }
 
-        container.appendChild(sensorBlock);
+        container.appendChild(card);
+    });
+}
+
+function getThingData(url) {
+    return $.ajax({
+        type: "GET",
+        url: url,
+        dataType: "json"
     });
 }
 
 
 function updateData() {
-    const requests = sensorUrls.map((url) => getSensorData(url));
+    const requests = things.map((thing) => {
+        return getThingData(thing.url).then((response) => {
+            response.deviceName = thing.deviceName;
+            return response;
+        });
+    });
 
     Promise.all(requests).then((responses) => {
-        lastSensorsData = responses;
-        renderSensors(lastSensorsData);
+        lastThingsData = responses;
+        renderThings(lastThingsData);
     });
 }
 
@@ -121,3 +163,22 @@ function toggleAutoUpdate() {
 toggleButton.onclick = toggleAutoUpdate;
 
 startAutoUpdate();
+
+function setDeviceStatus(deviceName, newStatus) {
+    $.ajax({
+        type: "GET",
+        url: "/set_status",
+        dataType: "json",
+        data: {
+            device: deviceName,
+            status: newStatus
+        },
+        success: function (response) {
+            console.log(response);
+            updateData();
+        },
+        error: function () {
+            alert("Ошибка при отправке команды на сервер");
+        }
+    });
+}
