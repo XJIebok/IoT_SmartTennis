@@ -55,6 +55,8 @@ function renderThings(thingsData) {
         const powerButton = card.querySelector(".power-btn");
         const details = card.querySelector(".thing-details");
 
+        const controls = card.querySelector(".thing-controls");
+
         idElement.textContent = thing.id;
         nameElement.textContent = thing.name;
         statusElement.textContent = thing.status;
@@ -87,27 +89,33 @@ function renderThings(thingsData) {
         };
 
         if (selectedThing === thing.id) {
-            details.innerHTML = "";
-
-            Object.entries(thing).forEach(([key, value]) => {
-                if (key === "deviceName") {
-                    return;
-                }
-
-                const p = document.createElement("p");
-                p.textContent = `${key}: ${formatValue(value)}`;
-                details.appendChild(p);
-            });
-
+            if (thing.status !== "online") {
+                renderInactiveMessage(thing, details);
+            } else {
+                renderDetails(thing, details);
+                renderControls(thing, controls);
+            }
             details.style.display = "block";
+            controls.style.display = "block";
         } else {
             details.style.display = "none";
+            controls.style.display = "none";
         }
 
         container.appendChild(card);
     });
 }
-
+function renderDetails(thing, detailsContainer) {
+    detailsContainer.innerHTML = "";
+        Object.entries(thing).forEach(([key, value]) => {
+            if (key === "deviceName") {
+                return;
+            }
+            const p = document.createElement("p");
+            p.textContent = `${key}: ${formatValue(value)}`;
+            detailsContainer.appendChild(p);
+        });
+}
 function getThingData(url) {
     return $.ajax({
         type: "GET",
@@ -164,6 +172,7 @@ toggleButton.onclick = toggleAutoUpdate;
 
 startAutoUpdate();
 
+// Блок управления
 function setDeviceStatus(deviceName, newStatus) {
     $.ajax({
         type: "GET",
@@ -181,4 +190,128 @@ function setDeviceStatus(deviceName, newStatus) {
             alert("Ошибка при отправке команды на сервер");
         }
     });
+}
+// Отображение блока управления для динамиков и табло
+function renderControls(thing, controlsContainer) {
+    controlsContainer.innerHTML = "";
+
+    if (thing.deviceName === "speaker") {
+        renderSpeakerControls(controlsContainer);
+    }
+
+    if (thing.deviceName === "scoreboard") {
+        renderScoreboardControls(controlsContainer);
+    }
+}
+function renderSpeakerControls(controlsContainer) {
+    const template = document.getElementById("speaker_controls_template");
+    const controls = template.content.cloneNode(true);
+
+    const soundTypeInput = controls.querySelector(".speaker-sound-type");
+    const durationInput = controls.querySelector(".speaker-duration");
+    const playButton = controls.querySelector(".speaker-play-btn");
+
+    const volumeInput = controls.querySelector(".speaker-volume");
+    const volumeButton = controls.querySelector(".speaker-volume-btn");
+
+    playButton.onclick = function () {
+        controlSpeaker({
+            command: "play_signal",
+            sound_type: soundTypeInput.value,
+            duration: durationInput.value
+        });
+    };
+
+    volumeButton.onclick = function () {
+        controlSpeaker({
+            command: "set_volume",
+            volume: volumeInput.value
+        });
+    };
+
+    controlsContainer.appendChild(controls);
+}
+function controlSpeaker(data) {
+    $.ajax({
+        type: "GET",
+        url: "/control_speaker",
+        dataType: "json",
+        data: data,
+        success: function (response) {
+            console.log(response);
+            updateData();
+        },
+        error: function () {
+            alert("Ошибка при отправке команды звуковой системе");
+        }
+    });
+}
+function renderScoreboardControls(controlsContainer) {
+    const template = document.getElementById("scoreboard_controls_template");
+    const controls = template.content.cloneNode(true);
+
+    const scoreTypeInput = controls.querySelector(".score-type");
+    const player1ScoreInput = controls.querySelector(".player1-score");
+    const player2ScoreInput = controls.querySelector(".player2-score");
+    const updateScoreButton = controls.querySelector(".score-update-btn");
+
+    const matchStatusInput = controls.querySelector(".match-status");
+    const matchStatusButton = controls.querySelector(".match-status-btn");
+    const resetScoreButton = controls.querySelector(".score-reset-btn");
+
+    updateScoreButton.onclick = function () {
+        controlScoreboard({
+            command: "update_score",
+            score_type: scoreTypeInput.value,
+            player1_score: player1ScoreInput.value,
+            player2_score: player2ScoreInput.value
+        });
+    };
+
+    matchStatusButton.onclick = function () {
+        controlScoreboard({
+            command: "set_match_status",
+            match_status: matchStatusInput.value
+        });
+    };
+
+    resetScoreButton.onclick = function () {
+        controlScoreboard({
+            command: "reset_score"
+        });
+    };
+
+    controlsContainer.appendChild(controls);
+}
+
+
+function controlScoreboard(data) {
+    $.ajax({
+        type: "GET",
+        url: "/control_scoreboard",
+        dataType: "json",
+        data: data,
+        success: function (response) {
+            console.log(response);
+            updateData();
+        },
+        error: function () {
+            alert("Ошибка при отправке команды табло");
+        }
+    });
+}
+function renderInactiveMessage(thing, container) {
+    container.innerHTML = "";
+
+    const p = document.createElement("p");
+
+    if (thing.status === "offline") {
+        p.textContent = "Устройство отключено. Для просмотра данных и управления включите его.";
+    } else if (thing.status === "maintenance") {
+        p.textContent = "Устройство находится на обслуживании. Управление временно недоступно.";
+    } else {
+        p.textContent = "Устройство недоступно.";
+    }
+
+    container.appendChild(p);
 }

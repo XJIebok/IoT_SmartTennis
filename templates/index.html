@@ -34,6 +34,79 @@
             </div>
 
             <div class="thing-details"></div>
+
+            <div class="thing-controls"></div>
+        </div>
+    </template>
+    <template id="speaker_controls_template">
+        <div class="control-block">
+            <h3>Управление звуковой системой</h3>
+
+            <label>
+                Тип сигнала:
+                <select class="speaker-sound-type">
+                    <option value="match_start">Начало матча</option>
+                    <option value="set_end">Конец сета</option>
+                    <option value="fault">Ошибка</option>
+                    <option value="warning">Предупреждение</option>
+                </select>
+            </label>
+
+            <label>
+                Длительность сигнала, сек:
+                <input class="speaker-duration" type="number" min="1" max="10" value="3">
+            </label>
+
+            <button class="speaker-play-btn">Подать сигнал</button>
+
+            <hr>
+
+            <label>
+                Громкость:
+                <input class="speaker-volume" type="number" min="0" max="100" value="70">
+            </label>
+
+            <button class="speaker-volume-btn">Изменить громкость</button>
+        </div>
+    </template>
+    <template id="scoreboard_controls_template">
+        <div class="control-block">
+            <h3>Управление табло</h3>
+            <label>
+                Тип счёта:
+                <select class="score-type">
+                    <option value="points">Очки</option>
+                    <option value="games">Геймы</option>
+                    <option value="sets">Сеты</option>
+                </select>
+            </label>
+
+            <label>
+                Игрок 1:
+                <input class="player1-score" type="number" min="0" value="0">
+            </label>
+
+            <label>
+                Игрок 2:
+                <input class="player2-score" type="number" min="0" value="0">
+            </label>
+
+            <button class="score-update-btn">Обновить счёт</button>
+
+            <hr>
+
+            <label>
+                Статус матча:
+                <select class="match-status">
+                    <option value="not started">Не начат</option>
+                    <option value="in progress">Идёт</option>
+                    <option value="paused">Пауза</option>
+                    <option value="finished">Завершён</option>
+                </select>
+            </label>
+
+            <button class="match-status-btn">Изменить статус</button>
+            <button class="score-reset-btn">Сбросить счёт</button>
         </div>
     </template>
 
