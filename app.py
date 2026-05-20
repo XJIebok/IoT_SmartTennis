@@ -102,13 +102,13 @@ def control_speaker():
 
     if command == "play_signal":
         sound_type = request.args.get("sound_type", "signal")
-        duration = int(request.args.get("duration", 3))
+        duration = request.args.get("duration", 3)
 
         result = speaker.play_signal(sound_type, duration)
         return jsonify(result)
 
     if command == "set_volume":
-        volume = int(request.args.get("volume", 70))
+        volume = request.args.get("volume", 70)
 
         result = speaker.set_volume(volume)
         return jsonify(result)
@@ -125,8 +125,8 @@ def control_scoreboard():
 
     if command == "update_score":
         score_type = request.args.get("score_type")
-        player1_score = int(request.args.get("player1_score", 0))
-        player2_score = int(request.args.get("player2_score", 0))
+        player1_score = request.args.get("player1_score", 0)
+        player2_score = request.args.get("player2_score", 0)
 
         result = scoreboard.update_score(score_type, player1_score, player2_score)
         return jsonify(result)

@@ -171,6 +171,7 @@ function toggleAutoUpdate() {
 toggleButton.onclick = toggleAutoUpdate;
 
 startAutoUpdate();
+stopAutoUpdate();
 
 // Блок управления
 function setDeviceStatus(deviceName, newStatus) {

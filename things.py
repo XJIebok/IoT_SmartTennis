@@ -1,5 +1,5 @@
 import random
-
+import re
 from abc import ABC, abstractmethod
 
 # Абстрактный класс вещи
@@ -18,26 +18,39 @@ class Thing(ABC):
             "status": self.status
         }
     # Изменение статуса Вещи
-    def set_status(self, status: str):
+    def set_status(self, status):
         allowed_statuses = ["online", "offline", "maintenance"]
+        try:
+            new_status = str(status).strip().lower()
 
-        if status not in allowed_statuses:
-            print(f"{self.name}: ошибка изменения статуса. Недопустимый статус: {status}")
+            if new_status not in allowed_statuses:
+                raise ValueError
+
+            self.status = new_status
+
+            print(f"{self.name}: статус изменён на {self.status}")
+
             return {
-                "result": "error",
-                "message": f"Недопустимый статус: {status}",
+                "result": "success",
+                "message": f"Статус изменён на {self.status}",
                 "thing": self.get_info()
             }
 
-        self.status = status
+        except ValueError:
+            print(f"{self.name}: ошибка изменения статуса. Недопустимый статус: {status}")
+            return {
+                "result": "error",
+                "message": f"Недопустимый статус: {status}. Допустимые значения: online, offline, maintenance",
+                "thing": self.get_info()
+            }
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при изменении статуса: {error}")
 
-        print(f"{self.name}: статус изменён на {self.status}")
-
-        return {
-            "result": "success",
-            "message": f"Статус {self.name} изменён на {self.status}",
-            "thing": self.get_info()
-        }
+            return {
+                "result": "error",
+                "message": "Ошибка при изменении статуса устройства",
+                "thing": self.get_info()
+            }
 
     @abstractmethod
     def connect(self):
@@ -68,7 +81,7 @@ class Sensor(Thing):
         pass
     # Метод, отправляющий данные с датчика
     def send_data(self):
-        print(f"{self.name}: метод send_data() запущен")
+        print(f"{self.name}: метод send_data() запущен\n")
         return {
             "id": self.id,
             "name": self.name,
@@ -229,46 +242,100 @@ class Speaker(Thing):
             "volume": self.volume
         }
 
-    def play_signal(self, sound_type: str, duration: int):
-        if self.status != "online":
+    def play_signal(self, sound_type, duration):
+        allowed_sound_types = ["match_start", "set_end", "fault", "warning"]
+
+        try:
+            if self.status != "online":
+                return {
+                    "result": "error",
+                    "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}",
+                    "speaker": self.connect()
+                }
+
+            sound_type = str(sound_type).strip().lower()
+
+            if not re.fullmatch(r"^[a-z_]+$", sound_type):
+                raise ValueError("Некорректный формат типа сигнала")
+
+            if sound_type not in allowed_sound_types:
+                raise ValueError("Недопустимый тип сигнала")
+
+            duration = int(duration)
+            if duration < 1 or duration > 10:
+                raise ValueError("Длительность сигнала должна быть от 1 до 10 секунд")
+
+            print(
+                f"{self.name}: метод play_signal() запущен. "
+                f"Тип сигнала: {sound_type}, "
+                f"длительность: {duration} секунд, "
+                f"громкость: {self.volume}"
+            )
+            return {
+                "result": "success",
+                "message": f"Сигнал '{sound_type}' запущен на {duration} секунд",
+                "sound_type": sound_type,
+                "duration": duration,
+                "volume": self.volume,
+                "speaker": self.connect()
+            }
+
+        except ValueError as error:
+            print(f"{self.name}: ошибка запуска сигнала. {error}")
             return {
                 "result": "error",
-                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+                "message": f"Ошибка запуска сигнала: {error}",
+                "speaker": self.connect()
             }
-        print(
-            f"{self.name}: метод play_signal() запущен. "
-            f"Тип сигнала: {sound_type}, "
-            f"длительность: {duration} секунд, "
-            f"громкость: {self.volume}"
-        )
 
-        return {
-            "result": "success",
-            "message": f"Сигнал '{sound_type}' запущен на {duration} секунд",
-            "sound_type": sound_type,
-            "duration": duration,
-            "volume": self.volume,
-            "speaker": self.connect()
-        }
-
-    def set_volume(self, volume: int):
-        if self.status != "online":
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при запуске сигнала: {error}")
             return {
                 "result": "error",
-                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+                "message": "Непредвиденная ошибка при запуске сигнала",
+                "speaker": self.connect()
             }
-        self.volume = volume
 
-        print(
-            f"{self.name}: метод set_volume() запущен. "
-            f"Новая громкость: {self.volume}"
-        )
+    def set_volume(self, volume):
+        try:
+            if self.status != "online":
+                return {
+                    "result": "error",
+                    "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}",
+                    "speaker": self.connect()
+                }
 
-        return {
-            "result": "success",
-            "message": f"Громкость изменена на {volume}",
-            "speaker": self.connect()
-        }
+            volume = int(volume)
+            if volume < 0 or volume > 100:
+                raise ValueError("Громкость должна быть в диапазоне от 0 до 100")
+
+            self.volume = volume
+
+            print(
+                f"{self.name}: метод set_volume() запущен. "
+                f"Новая громкость: {self.volume}"
+            )
+            return {
+                "result": "success",
+                "message": f"Громкость изменена на {volume}",
+                "speaker": self.connect()
+            }
+
+        except ValueError as error:
+            print(f"{self.name}: ошибка изменения громкости. {error}")
+            return {
+                "result": "error",
+                "message": f"Ошибка изменения громкости: {error}",
+                "speaker": self.connect()
+            }
+
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при изменении громкости: {error}")
+            return {
+                "result": "error",
+                "message": "Непредвиденная ошибка при изменении громкости",
+                "speaker": self.connect()
+            }
 
 # Класс для Табло со счётом
 class Scoreboard(Thing):
@@ -295,78 +362,134 @@ class Scoreboard(Thing):
             "match_status": self.match_status
         }
 
-    def update_score(self, score_type: str, player1_score: int, player2_score: int):
-        if self.status != "online":
-            return {
-                "result": "error",
-                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
-            }
+    def update_score(self, score_type, player1_score, player2_score):
         score_types = {
             "sets": "сеты",
             "games": "геймы",
             "points": "очки"
         }
 
-        if score_type not in score_types:
-            print(f"{self.name}: ошибка обновления счёта. Неизвестный тип счёта: {score_type}")
+        try:
+            if self.status != "online":
+                return {
+                    "result": "error",
+                    "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}",
+                    "scoreboard": self.connect()
+                }
+
+            score_type = str(score_type).strip().lower()
+
+            if score_type not in score_types:
+                raise ValueError(f"Недопустимый тип счёта: {score_type}")
+
+            player1_score = int(player1_score)
+            player2_score = int(player2_score)
+
+            if player1_score < 0 or player2_score < 0:
+                raise ValueError("Значения счёта не могут быть отрицательными")
+
+            self.score[score_type] = [player1_score, player2_score]
+
+            print(
+                f"{self.name}: {score_types[score_type]} обновлены: "
+                f"{self.score[score_type]}"
+            )
             return {
-                "result": "error",
-                "message": f"Неизвестный тип счёта: {score_type}",
+                "result": "success",
+                "message": f"{score_types[score_type]} обновлены",
                 "scoreboard": self.connect()
             }
 
-        self.score[score_type] = [player1_score, player2_score]
-
-        print(
-            f"{self.name}: {score_types[score_type]} обновлены: "
-            f"{self.score[score_type]}"
-        )
-
-        return {
-            "result": "success",
-            "message": f"{score_types[score_type]} обновлены",
-            "scoreboard": self.connect()
-        }
-
-    def set_match_status(self, match_status: str):
-        if self.status != "online":
+        except ValueError as error:
+            print(f"{self.name}: ошибка обновления счёта. {error}")
             return {
                 "result": "error",
-                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+                "message": f"Ошибка обновления счёта: {error}",
+                "scoreboard": self.connect()
             }
-        self.match_status = match_status
 
-        print(
-            f"{self.name}: метод set_match_status() запущен. "
-            f"Статус матча: {self.match_status}"
-        )
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при обновлении счёта: {error}")
+            return {
+                "result": "error",
+                "message": "Непредвиденная ошибка при обновлении счёта",
+                "scoreboard": self.connect()
+            }
 
-        return {
-            "result": "success",
-            "message": f"Статус матча изменён на {match_status}",
-            "scoreboard": self.connect()
-        }
+    def set_match_status(self, match_status):
+        allowed_statuses = ["not started", "in progress", "paused", "finished"]
+
+        try:
+            if self.status != "online":
+                return {
+                    "result": "error",
+                    "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}",
+                    "scoreboard": self.connect()
+                }
+
+            match_status = str(match_status).strip().lower()
+
+            if match_status not in allowed_statuses:
+                raise ValueError(f"Недопустимый статус матча: {match_status}")
+
+            self.match_status = match_status
+
+            print(
+                f"{self.name}: метод set_match_status() запущен. "
+                f"Статус матча: {self.match_status}"
+            )
+            return {
+                "result": "success",
+                "message": f"Статус матча изменён на {match_status}",
+                "scoreboard": self.connect()
+            }
+
+        except ValueError as error:
+            print(f"{self.name}: ошибка изменения статуса матча. {error}")
+            return {
+                "result": "error",
+                "message": f"Ошибка изменения статуса матча: {error}",
+                "scoreboard": self.connect()
+            }
+
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при изменении статуса матча: {error}")
+            return {
+                "result": "error",
+                "message": "Непредвиденная ошибка при изменении статуса матча",
+                "scoreboard": self.connect()
+            }
 
     def reset_score(self):
-        if self.status != "online":
+        try:
+            if self.status != "online":
+                return {
+                    "result": "error",
+                    "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}",
+                    "scoreboard": self.connect()
+                }
+
+            self.score = {
+                "points": [0, 0],
+                "games": [0, 0],
+                "sets": [0, 0]
+            }
+            self.match_status = "not started"
+
+            print(f"{self.name}: метод reset_score() запущен. Счёт сброшен")
+            return {
+                "result": "success",
+                "message": "Счёт сброшен",
+                "scoreboard": self.connect()
+            }
+
+        except Exception as error:
+            print(f"{self.name}: непредвиденная ошибка при сбросе счёта: {error}")
             return {
                 "result": "error",
-                "message": f"{self.name}: устройство недоступно, текущий статус: {self.status}"
+                "message": "Непредвиденная ошибка при сбросе счёта",
+                "scoreboard": self.connect()
             }
-        self.score = {
-            "points": [0, 0],
-            "games": [0, 0],
-            "sets": [0, 0]
-        }
-        self.match_status = "not started"
-
-        print(f"{self.name}: метод reset_score() запущен. Счёт сброшен")
-
-        return {
-            "result": "success",
-            "message": "Счёт сброшен",
-            "scoreboard": self.connect()
-        }
 
 # Класс Игрока
 class Player:
