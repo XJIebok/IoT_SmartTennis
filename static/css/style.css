@@ -131,3 +131,27 @@
 .control-block button:hover {
     background: #dddddd;
 }
+
+.top-controls {
+    width: 650px;
+    margin: 20px auto;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.auto-mode-result {
+    width: 650px;
+    margin: 10px auto 20px auto;
+    padding: 14px;
+    border: 2px solid #333;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.auto-mode-note {
+    margin: 0;
+    padding: 12px;
+    background: #fff3cd;
+    border-top: 2px solid #333;
+}

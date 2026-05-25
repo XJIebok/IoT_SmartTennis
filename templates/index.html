@@ -10,9 +10,19 @@
     <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
 </head>
 <body>
-    <button id="toggle_update" class="toggle-button">
-        Автообновление: включено
-    </button>
+    <div class="top-controls">
+        <button id="toggle_update" class="toggle-button">
+            Автообновление: включено
+        </button>
+
+        <button id="toggle_auto_mode" class="toggle-button">
+            Автоматический режим: выключен
+        </button>
+    </div>
+
+    <div id="auto_mode_result" class="auto-mode-result">
+        Автоматический режим не запущен
+    </div>
     <template id="thing_card_template">
         <div class="thing-card">
             <div class="thing-header">

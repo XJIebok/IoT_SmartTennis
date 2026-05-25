@@ -1,7 +1,9 @@
 
 let lastSensorsData = [];
+let autoModeEnabled = false;
 let autoUpdateEnabled = true;
 let updateInterval = null;
+let autoModeInterval = null;
 
 const toggleButton = document.getElementById("toggle_update");
 
@@ -9,6 +11,9 @@ let selectedThing = null;
 let lastThingsData = [];
 
 const container = document.getElementById("things_container");
+
+const autoModeButton = document.getElementById("toggle_auto_mode");
+const autoModeResult = document.getElementById("auto_mode_result");
 
 const things = [
     { deviceName: "camera", url: "/connect_camera" },
@@ -138,12 +143,62 @@ function updateData() {
         renderThings(lastThingsData);
     });
 }
+function updateAutoRally() {
+    $.ajax({
+        type: "GET",
+        url: "/auto_rally",
+        dataType: "json",
+        success: function (response) {
+            console.log(response);
 
+            autoModeResult.innerHTML = `
+                <strong>Результат автоматического режима:</strong><br>
+                event: ${response.event || "-"}<br>
+                point_to: ${response.point_to || "-"}<br>
+                result: ${response.result || "-"}<br>
+                message: ${response.message || "-"}
+            `;
+
+            const thingsFromAutoMode = [];
+
+            if (response.camera) {
+                response.camera.deviceName = "camera";
+                thingsFromAutoMode.push(response.camera);
+            }
+
+            if (response.line_sensor) {
+                response.line_sensor.deviceName = "line_sensor";
+                thingsFromAutoMode.push(response.line_sensor);
+            }
+
+            if (response.net_sensor) {
+                response.net_sensor.deviceName = "net_sensor";
+                thingsFromAutoMode.push(response.net_sensor);
+            }
+
+            if (response.scoreboard) {
+                response.scoreboard.deviceName = "scoreboard";
+                thingsFromAutoMode.push(response.scoreboard);
+            }
+
+            if (response.speaker) {
+                response.speaker.deviceName = "speaker";
+                thingsFromAutoMode.push(response.speaker);
+            }
+
+            lastThingsData = thingsFromAutoMode;
+            renderThings(lastThingsData);
+        },
+        error: function () {
+            autoModeResult.textContent = "Ошибка при выполнении автоматического режима";
+        }
+    });
+}
 
 function startAutoUpdate() {
     updateData();
 
-    updateInterval = setInterval(updateData, 1000);
+    updateInterval = setInterval(updateData, 3000);
     autoUpdateEnabled = true;
 
     toggleButton.innerText = "Автообновление: включено";
@@ -159,16 +214,58 @@ function stopAutoUpdate() {
 }
 
 
+
 function toggleAutoUpdate() {
+    if (autoModeEnabled) {
+        alert("Автообновление недоступно в автоматическом режиме");
+        return;
+    }
+
     if (autoUpdateEnabled) {
         stopAutoUpdate();
     } else {
         startAutoUpdate();
     }
 }
+function startAutoMode() {
+    if (autoUpdateEnabled) {
+        stopAutoUpdate();
+    }
+
+    autoModeEnabled = true;
+    autoModeButton.textContent = "Автоматический режим: включен";
+
+    updateAutoRally();
+    autoModeInterval = setInterval(updateAutoRally, 3000);
+
+    renderThings(lastThingsData);
+}
+
+
+function stopAutoMode() {
+    clearInterval(autoModeInterval);
+    autoModeInterval = null;
+
+    autoModeEnabled = false;
+    autoModeButton.textContent = "Автоматический режим: выключен";
+
+    autoModeResult.textContent = "Автоматический режим не запущен";
+
+    renderThings(lastThingsData);
+}
+
+
+function toggleAutoMode() {
+    if (autoModeEnabled) {
+        stopAutoMode();
+    } else {
+        startAutoMode();
+    }
+}
 
 
 toggleButton.onclick = toggleAutoUpdate;
+autoModeButton.onclick = toggleAutoMode;
 
 startAutoUpdate();
 stopAutoUpdate();
@@ -195,6 +292,14 @@ function setDeviceStatus(deviceName, newStatus) {
 // Отображение блока управления для динамиков и табло
 function renderControls(thing, controlsContainer) {
     controlsContainer.innerHTML = "";
+
+    if (autoModeEnabled) {
+        const p = document.createElement("p");
+        p.className = "auto-mode-note";
+        p.textContent = "Ручное управление скрыто: устройство управляется главным контроллером.";
+        controlsContainer.appendChild(p);
+        return;
+    }
 
     if (thing.deviceName === "speaker") {
         renderSpeakerControls(controlsContainer);

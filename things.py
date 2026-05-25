@@ -11,7 +11,7 @@ class Thing(ABC):
         print(f"Создан объект Thing: id={self.id}, name={self.name}, status={self.status}")
 
     def get_info(self):
-        print(f"{self.name}: метод get_info() запущен")
+        # print(f"{self.name}: метод get_info() запущен")
         return {
             "id": self.id,
             "name": self.name,
@@ -54,7 +54,7 @@ class Thing(ABC):
 
     @abstractmethod
     def connect(self):
-        print(f"{self.name}: подключение начато")
+        pass # print(f"{self.name}: подключение начато")
 
 # Класс Сенсора
 class Sensor(Thing):
@@ -72,7 +72,7 @@ class Sensor(Thing):
             print(f"{self.name}: датчик не активен, текущий статус: {self.status}")
             return self.send_data()
 
-        print(f"{self.name}: датчик подключен")
+        # print(f"{self.name}: датчик подключен")
         self.detect_event()
         return self.send_data()
     # Метод, генерирующий все данные для датчиков
@@ -81,7 +81,7 @@ class Sensor(Thing):
         pass
     # Метод, отправляющий данные с датчика
     def send_data(self):
-        print(f"{self.name}: метод send_data() запущен\n")
+        # print(f"{self.name}: метод send_data() запущен\n")
         return {
             "id": self.id,
             "name": self.name,
@@ -94,44 +94,116 @@ class Sensor(Thing):
 class CourtCamera(Sensor):
     def __init__(self, device_id: int, name: str, status: str, location: str):
         super().__init__(device_id, name, status, location)
+
         self.frame_id = 0
-        self.screen_ball_position = None
-        self.is_ball_detected = False
+        self.hit_type = "none"
+        self.hit_coordinate = None
+        self.ball_speed = 0
+        self.confidence = 0.0
+
+        self.next_hit_type = "racket"
+        self.last_racket_side = None
+
         print(f"Создан CourtCamera: {self.name}")
-    # Номер текущего кадра на камере
+
     def capture_frame(self):
         self.frame_id += 1
         print(f"{self.name}: метод capture_frame() запущен, frame_id={self.frame_id}")
-    # Гненерация местоположения мяча на камере
-    def detect_ball_on_frame(self):
-        self.is_ball_detected = random.choice([True, False])
 
-        if self.is_ball_detected:
-            self.screen_ball_position = (
-                random.randint(0, 1920),
-                random.randint(0, 1080)
-            )
+    def detect_ball_event(self):
+        if self.next_hit_type == "racket":
+            self.generate_racket_hit()
+            self.next_hit_type = "bounce"
         else:
-            self.screen_ball_position = None
+            self.generate_bounce()
+            self.next_hit_type = "racket"
 
-        self.last_value = str(self.screen_ball_position)
+        self.ball_speed = random.randint(60, 160)
+        self.confidence = round(random.uniform(0.75, 0.99), 2)
+
+        self.last_value = f"{self.hit_type}: {self.hit_coordinate}"
+
         print(
-            f"{self.name}: метод detect_ball_on_frame() запущен. "
-            f"Мяч обнаружен: {self.is_ball_detected}, "
-            f"позиция на экране: {self.screen_ball_position}"
+            f"{self.name}: метод detect_ball_event() запущен. "
+            f"Тип события: {self.hit_type}, "
+            f"координата: {self.hit_coordinate}, "
+            f"скорость: {self.ball_speed}, "
+            f"уверенность: {self.confidence}"
         )
+
+    def generate_racket_hit(self):
+        self.hit_type = "racket"
+
+        if self.last_racket_side == "left":
+            side = "right"
+        elif self.last_racket_side == "right":
+            side = "left"
+        else:
+            side = random.choice(["left", "right"])
+
+        self.last_racket_side = side
+
+        if side == "left":
+            x = round(random.uniform(-42.0, -37.0), 2)
+        else:
+            x = round(random.uniform(37.0, 42.0), 2)
+
+        y = round(random.uniform(-10.0, 10.0), 2)
+
+        self.hit_coordinate = [x, y]
+
+    def generate_bounce(self):
+        self.hit_type = "bounce"
+
+        if self.last_racket_side == "left":
+            target_side = "right"
+        else:
+            target_side = "left"
+
+        event_type = random.choices(
+            ["in", "out", "line"],
+            weights=[70, 20, 10],
+            k=1
+        )[0]
+
+        if target_side == "right":
+            if event_type == "in":
+                x = round(random.uniform(5.0, 38.0), 2)
+            elif event_type == "line":
+                x = round(random.uniform(38.7, 39.2), 2)
+            else:
+                x = round(random.uniform(39.5, 45.0), 2)
+        else:
+            if event_type == "in":
+                x = round(random.uniform(-38.0, -5.0), 2)
+            elif event_type == "line":
+                x = round(random.uniform(-39.2, -38.7), 2)
+            else:
+                x = round(random.uniform(-45.0, -39.5), 2)
+
+        if event_type == "out" and random.choice([True, False]):
+            y = round(random.choice([
+                random.uniform(-18.0, -14.0),
+                random.uniform(14.0, 18.0)
+            ]), 2)
+        else:
+            y = round(random.uniform(-13.0, 13.0), 2)
+
+        self.hit_coordinate = [x, y]
 
     def detect_event(self):
         print(f"{self.name}: метод detect_event() запущен")
         self.capture_frame()
-        self.detect_ball_on_frame()
+        self.detect_ball_event()
 
     def send_data(self):
         data = super().send_data()
         data.update({
             "frame_id": self.frame_id,
-            "screen_ball_position": self.screen_ball_position,
-            "is_ball_detected": self.is_ball_detected
+            "hit_type": self.hit_type,
+            "hit_coordinate": self.hit_coordinate,
+            "ball_speed": self.ball_speed,
+            "confidence": self.confidence
         })
         return data
 
@@ -534,36 +606,208 @@ class Database:
         print("Database: метод get_history() запущен")
 
 # Класс Главного конроллера
-class MainController(Thing):
-    def __init__(self, device_id: int, name: str, status: str):
-        super().__init__(device_id, name, status)
-        self.match_status = "waiting"
+class MainController:
+    def __init__(self):
+        self.match_status = "in progress"
         self.current_set = 1
         self.current_game = 1
-        self.last_event = None
-        print(f"Создан MainController: {self.name}")
+        self.last_event = "none"
+        self.last_hit_player = None
 
-    def connect(self):
-        super().connect()
-        print(f"{self.name}: главный контроллер подключен")
+        self.player_sides = {
+            1: "left",
+            2: "right"
+        }
 
-    def receive_data(self):
-        print(f"{self.name}: метод receive_data() запущен")
+        self.court_x_limit = 39.0
+        self.court_y_limit = 13.5
 
-    def process_event(self):
-        print(f"{self.name}: метод process_event() запущен")
+        print("Создан MainController")
 
-    def update_scoreboard(self):
-        print(f"{self.name}: метод update_scoreboard() запущен")
+    def get_state(self):
+        return {
+            "match_status": self.match_status,
+            "current_set": self.current_set,
+            "current_game": self.current_game,
+            "player_sides": self.player_sides,
+            "last_hit_player": self.last_hit_player,
+            "last_event": self.last_event
+        }
 
-    def control_speaker(self):
-        print(f"{self.name}: метод control_speaker() запущен")
+    # Определения игрока по координатам с датчика камеры и события отбития ракеткой
+    def get_player_by_coordinate(self, coordinate):
+        x = coordinate[0]
 
-    def save_event(self):
-        print(f"{self.name}: метод save_event() запущен")
+        event_side = "left" if x < 0 else "right"
 
-    def change_sides(self):
-        print(f"{self.name}: метод change_sides() запущен")
+        for player_number, side in self.player_sides.items():
+            if side == event_side:
+                return player_number
 
-    def end_set(self):
-        print(f"{self.name}: метод end_set() запущен")
+        return None
+
+    def get_opponent(self, player_number):
+        if player_number == 1:
+            return 2
+        if player_number == 2:
+            return 1
+        return None
+
+    # Находятся ли полученные координаты датчика внутри корта
+    def is_coordinate_inside_court(self, coordinate):
+        x = coordinate[0]
+        y = coordinate[1]
+
+        return (
+            -self.court_x_limit <= x <= self.court_x_limit and
+            -self.court_y_limit <= y <= self.court_y_limit
+        )
+
+    def is_near_line(self, coordinate):
+        x = coordinate[0]
+        y = coordinate[1]
+
+        x_near_line = abs(abs(x) - self.court_x_limit) <= 0.5
+        y_near_line = abs(abs(y) - self.court_y_limit) <= 0.5
+
+        return x_near_line or y_near_line
+
+    def add_point_to_player(self, player_number, scoreboard):
+        if player_number is None:
+            return {
+                "result": "error",
+                "message": "Не удалось определить игрока для начисления очка"
+            }
+
+        current_points = scoreboard.score["points"]
+
+        if player_number == 1:
+            current_points[0] += 1
+        else:
+            current_points[1] += 1
+
+        return scoreboard.update_score(
+            "points",
+            current_points[0],
+            current_points[1]
+        )
+
+    def sync_line_sensor(self, camera_data, line_sensor):
+        if line_sensor.status != "online":
+            line_sensor.triggered = False
+            line_sensor.impact_coordinate = None
+            line_sensor.signal_strength = 0.0
+            return
+
+        if camera_data["hit_type"] != "bounce":
+            line_sensor.triggered = False
+            line_sensor.impact_coordinate = None
+            line_sensor.signal_strength = 0.0
+            return
+
+        coordinate = camera_data["hit_coordinate"]
+
+        if self.is_near_line(coordinate):
+            line_sensor.triggered = True
+            line_sensor.impact_coordinate = coordinate
+            line_sensor.signal_strength = round(random.uniform(5.0, 10.0), 2)
+        else:
+            line_sensor.triggered = False
+            line_sensor.impact_coordinate = None
+            line_sensor.signal_strength = 0.0
+
+        line_sensor.last_value = str(line_sensor.impact_coordinate)
+
+    def sync_net_sensor(self, camera_data, net_sensor):
+        if net_sensor.status != "online":
+            net_sensor.tension_level = 0.0
+            net_sensor.vibration_level = 0.0
+            net_sensor.net_contact = False
+            return
+
+        if camera_data["hit_type"] == "racket":
+            net_contact = random.choices(
+                [True, False],
+                weights=[15, 85],
+                k=1
+            )[0]
+
+            net_sensor.net_contact = net_contact
+            net_sensor.tension_level = round(random.uniform(40.0, 60.0), 2)
+
+            if net_contact:
+                net_sensor.vibration_level = round(random.uniform(7.0, 10.0), 2)
+            else:
+                net_sensor.vibration_level = round(random.uniform(0.0, 4.0), 2)
+        else:
+            net_sensor.net_contact = False
+            net_sensor.tension_level = round(random.uniform(40.0, 60.0), 2)
+            net_sensor.vibration_level = round(random.uniform(0.0, 3.0), 2)
+
+        net_sensor.last_value = str(net_sensor.net_contact)
+
+    def process_auto_rally(self, camera, line_sensor, net_sensor, scoreboard, speaker):
+
+        camera_data = camera.connect()
+
+        if camera.status != "online":
+            self.last_event = "camera unavailable"
+            return {
+                "result": "error",
+                "message": "Камера недоступна, автоматическая обработка невозможна",
+                "controller": self.get_state(),
+                "camera": camera_data
+            }
+
+        self.sync_line_sensor(camera_data, line_sensor)
+        self.sync_net_sensor(camera_data, net_sensor)
+
+        hit_type = camera_data["hit_type"]
+        coordinate = camera_data["hit_coordinate"]
+
+        scoreboard_result = None
+        speaker_result = None
+        point_to = None
+
+        if hit_type == "racket":
+            self.last_hit_player = self.get_player_by_coordinate(coordinate)
+            self.last_event = f"racket hit by player {self.last_hit_player}"
+
+            if net_sensor.net_contact:
+                point_to = self.get_opponent(self.last_hit_player)
+                self.last_event = f"net fault, point to player {point_to}"
+
+                scoreboard_result = self.add_point_to_player(point_to, scoreboard)
+                speaker_result = speaker.play_signal("fault", 2)
+
+        elif hit_type == "bounce":
+            inside_court = self.is_coordinate_inside_court(coordinate)
+
+            if inside_court or line_sensor.triggered:
+                self.last_event = "ball in court"
+            else:
+                point_to = self.get_opponent(self.last_hit_player)
+                self.last_event = f"out, point to player {point_to}"
+
+                scoreboard_result = self.add_point_to_player(point_to, scoreboard)
+                speaker_result = speaker.play_signal("fault", 2)
+
+        else:
+            self.last_event = "unknown ball event"
+
+        print(f"Главный контроллер: автоматическая обработка выполнена. Событие: {self.last_event}")
+
+        return {
+            "result": "success",
+            "message": "Автоматическая обработка розыгрыша выполнена",
+            "event": self.last_event,
+            "point_to": point_to,
+            "camera": camera_data,
+            "line_sensor": line_sensor.send_data(),
+            "net_sensor": net_sensor.send_data(),
+            "scoreboard": scoreboard.connect(),
+            "speaker": speaker.connect(),
+            "scoreboard_result": scoreboard_result,
+            "speaker_result": speaker_result,
+            "controller": self.get_state()
+        }

@@ -36,6 +36,8 @@ speaker = things.Speaker(
     location="зона судьи"
 )
 
+controller = things.MainController()
+
 # Лаба 2
 @app.route("/")
 def index():
@@ -146,5 +148,17 @@ def control_scoreboard():
         "message": f"Неизвестная команда для табло: {command}"
     })
 
+# Автоматизация
+@app.route("/auto_rally")
+def auto_rally():
+    result = controller.process_auto_rally(
+        camera,
+        line_sensor,
+        net_sensor,
+        scoreboard,
+        speaker
+    )
+
+    return jsonify(result)
 if __name__ == "__main__":
     app.run(debug=True)
