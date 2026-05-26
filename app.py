@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, request
 import things
+import database
 
 app = Flask(__name__)
 
@@ -37,6 +38,8 @@ speaker = things.Speaker(
 )
 
 controller = things.MainController()
+
+logger = database.DatabaseLogger()
 
 # Лаба 2
 @app.route("/")
@@ -85,16 +88,41 @@ def set_status():
     new_status = request.args.get("status")
 
     if device_name not in devices:
-        return jsonify({
+        result = {
             "result": "error",
             "message": f"Устройство '{device_name}' не найдено"
+        }
+        logger.save_control_log({
+            "device": device_name,
+            "command": "set_status",
+            "new_status": new_status,
+            "result": result.get("result"),
+            "message": result.get("message")
         })
+        return jsonify(result)
     if new_status is None:
-        return jsonify({
+        result = {
             "result": "error",
             "message": "Не передан новый статус устройства"
+        }
+        logger.save_control_log({
+            "device": device_name,
+            "command": "set_status",
+            "new_status": new_status,
+            "result": result.get("result"),
+            "message": result.get("message")
         })
+        return jsonify(result)
+
     result = devices[device_name].set_status(new_status)
+    logger.save_control_log({
+        "device": device_name,
+        "command": "set_status",
+        "new_status": new_status,
+        "result": result.get("result"),
+        "message": result.get("message"),
+        "response": result
+    })
     return jsonify(result)
 
 # Воспроизведение сигнала через динамики
@@ -107,18 +135,44 @@ def control_speaker():
         duration = request.args.get("duration", 3)
 
         result = speaker.play_signal(sound_type, duration)
+        logger.save_control_log({
+            "device": "speaker",
+            "command": command,
+            "sound_type": sound_type,
+            "duration": duration,
+            "result": result.get("result"),
+            "message": result.get("message"),
+            "response": result
+        })
         return jsonify(result)
 
     if command == "set_volume":
         volume = request.args.get("volume", 70)
 
         result = speaker.set_volume(volume)
+        logger.save_control_log({
+            "device": "speaker",
+            "command": command,
+            "volume": volume,
+            "result": result.get("result"),
+            "message": result.get("message"),
+            "response": result
+        })
         return jsonify(result)
 
-    return jsonify({
+    result = {
         "result": "error",
         "message": f"Неизвестная команда для звуковой системы: {command}"
+    }
+
+    logger.save_control_log({
+        "device": "speaker",
+        "command": command,
+        "result": result.get("result"),
+        "message": result.get("message")
     })
+
+    return jsonify(result)
 
 # Изменения показаний табло
 @app.route("/control_scoreboard")
@@ -131,22 +185,56 @@ def control_scoreboard():
         player2_score = request.args.get("player2_score", 0)
 
         result = scoreboard.update_score(score_type, player1_score, player2_score)
+        logger.save_control_log({
+            "device": "scoreboard",
+            "command": command,
+            "score_type": score_type,
+            "player1_score": player1_score,
+            "player2_score": player2_score,
+            "result": result.get("result"),
+            "message": result.get("message"),
+            "response": result
+        })
         return jsonify(result)
 
     if command == "set_match_status":
         match_status = request.args.get("match_status", "not started")
 
         result = scoreboard.set_match_status(match_status)
+        logger.save_control_log({
+            "device": "scoreboard",
+            "command": command,
+            "match_status": match_status,
+            "result": result.get("result"),
+            "message": result.get("message"),
+            "response": result
+        })
         return jsonify(result)
 
     if command == "reset_score":
         result = scoreboard.reset_score()
+        logger.save_control_log({
+            "device": "scoreboard",
+            "command": command,
+            "result": result.get("result"),
+            "message": result.get("message"),
+            "response": result
+        })
         return jsonify(result)
 
-    return jsonify({
+    result = {
         "result": "error",
         "message": f"Неизвестная команда для табло: {command}"
+    }
+
+    logger.save_control_log({
+        "device": "scoreboard",
+        "command": command,
+        "result": result.get("result"),
+        "message": result.get("message")
     })
+
+    return jsonify(result)
 
 # Автоматизация
 @app.route("/auto_rally")
@@ -158,7 +246,8 @@ def auto_rally():
         scoreboard,
         speaker
     )
-
+    logger.save_auto_event(result)
     return jsonify(result)
+
 if __name__ == "__main__":
     app.run(debug=True)
