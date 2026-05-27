@@ -145,7 +145,7 @@
 
 /*Лаба 8*/
 .main-layout {
-    width: 1200px;
+    width: 940px;
     margin: 20px auto;
     display: grid;
     grid-template-columns: 520px 420px;

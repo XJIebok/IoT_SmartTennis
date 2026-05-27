@@ -66,6 +66,8 @@ class DatabaseLogger:
             average_rally_length = 0
             max_rally_length = 0
 
+        print("Анализ автоматических событий из MongoDB выполнен")
+
         return {
             "rally_lengths": rally_lengths,
             "completed_rallies": len(rally_lengths),
@@ -89,6 +91,8 @@ class DatabaseLogger:
 
             if log.get("result") == "error":
                 error_commands += 1
+
+        print("Анализ ручных событий из MongoDB выполнен")
 
         return {
             "total_commands": total_commands,
