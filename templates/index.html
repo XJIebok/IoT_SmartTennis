@@ -8,6 +8,8 @@
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+    <script src="https://unpkg.com/chart.js@3.5.0/dist/chart.min.js"></script>
+
 </head>
 <body>
     <div class="top-controls">
@@ -20,20 +22,6 @@
         </button>
     </div>
 
-<!--    <div id="auto_mode_result" class="auto-mode-result">-->
-<!--        Автоматический режим не запущен-->
-<!--    </div>-->
-<!--    <div id="analysis_block" class="analysis-block">-->
-<!--        <h3>Анализ данных</h3>-->
-<!--    -->
-<!--        <button id="analyze_data_btn" class="toggle-button">-->
-<!--            Обновить анализ данных-->
-<!--        </button>-->
-
-<!--        <div id="analysis_result">-->
-<!--            Данные анализа ещё не загружены-->
-<!--        </div>-->
-<!--    </div>-->
     <template id="thing_card_template">
         <div class="thing-card">
             <div class="thing-header">
@@ -153,6 +141,10 @@
                 <div id="analysis_result">
                     Данные анализа ещё не загружены
                 </div>
+            </div>
+            <div class="chart-block">
+                <h3>График длины розыгрышей</h3>
+                <canvas id="rally_chart"></canvas>
             </div>
         </div>
     </div>

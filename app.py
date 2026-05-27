@@ -262,5 +262,11 @@ def analyze_data():
 
     return jsonify(result)
 
+# Получение массива длинн ралли, расчитанных на основе данных БД
+@app.route("/rally_chart_data")
+def rally_chart_data():
+    chart_data = logger.get_rally_chart_data()
+    return jsonify(chart_data)
+
 if __name__ == "__main__":
     app.run(debug=True)

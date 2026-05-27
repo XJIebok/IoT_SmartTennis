@@ -457,4 +457,54 @@ function updateDataAnalysis() {
 }
 
 
-analyzeDataButton.onclick = updateDataAnalysis;
+let rallyChart = null;
+
+const rallyChartCanvas = document.getElementById("rally_chart");
+
+function updateRallyChart() {
+    $.ajax({
+        type: "GET",
+        url: "/rally_chart_data",
+        dataType: "json",
+        success: function (response) {
+            console.log(response);
+
+            if (rallyChart !== null) {
+                rallyChart.destroy();
+            }
+
+            rallyChart = new Chart(rallyChartCanvas, {
+                type: "bar",
+                data: {
+                    labels: response.labels,
+                    datasets: [
+                        {
+                            label: "Длина розыгрыша",
+                            data: response.values,
+                            tension: 0.2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        },
+        error: function () {
+            alert("Ошибка при получении данных для графика");
+        }
+    });
+}
+
+analyzeDataButton.onclick = function () {
+    updateDataAnalysis();
+    updateRallyChart();
+};

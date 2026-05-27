@@ -99,6 +99,20 @@ class DatabaseLogger:
             "success_commands": success_commands,
             "error_commands": error_commands
         }
+    # Получаем данные в формате, удобном для Chart.js
+    def get_rally_chart_data(self):
+        analysis = self.analyze_rally_lengths()
+        rally_lengths = analysis["rally_lengths"]
+
+        labels = []
+
+        for index in range(len(rally_lengths)):
+            labels.append(f"Розыгрыш {index + 1}")
+        print("")
+        return {
+            "labels": labels,
+            "values": rally_lengths
+        }
 
     def get_auto_events(self, limit: int = 10):
         events = self.auto_events_collection.find().sort("_id", -1).limit(limit)
