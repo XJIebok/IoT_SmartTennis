@@ -20,9 +20,20 @@
         </button>
     </div>
 
-    <div id="auto_mode_result" class="auto-mode-result">
-        Автоматический режим не запущен
-    </div>
+<!--    <div id="auto_mode_result" class="auto-mode-result">-->
+<!--        Автоматический режим не запущен-->
+<!--    </div>-->
+<!--    <div id="analysis_block" class="analysis-block">-->
+<!--        <h3>Анализ данных</h3>-->
+<!--    -->
+<!--        <button id="analyze_data_btn" class="toggle-button">-->
+<!--            Обновить анализ данных-->
+<!--        </button>-->
+
+<!--        <div id="analysis_result">-->
+<!--            Данные анализа ещё не загружены-->
+<!--        </div>-->
+<!--    </div>-->
     <template id="thing_card_template">
         <div class="thing-card">
             <div class="thing-header">
@@ -122,6 +133,28 @@
         </div>
     </template>
 
-    <div id="things_container"></div>
+    <div class="main-layout">
+        <div class="left-panel">
+            <div id="things_container"></div>
+        </div>
+
+        <div class="right-panel">
+            <div id="auto_mode_result" class="auto-mode-result">
+                Автоматический режим не запущен
+            </div>
+
+            <button id="analyze_data_btn" class="toggle-button">
+                Обновить анализ данных
+            </button>
+
+            <div id="analysis_block" class="analysis-block">
+                <h3>Анализ данных</h3>
+
+                <div id="analysis_result">
+                    Данные анализа ещё не загружены
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

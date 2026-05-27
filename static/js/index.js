@@ -421,3 +421,40 @@ function renderInactiveMessage(thing, container) {
 
     container.appendChild(p);
 }
+
+const analyzeDataButton = document.getElementById("analyze_data_btn");
+const analysisResult = document.getElementById("analysis_result");
+
+
+function updateDataAnalysis() {
+    $.ajax({
+        type: "GET",
+        url: "/analyze_data",
+        dataType: "json",
+        success: function (response) {
+            console.log(response);
+
+            const rally = response.rally_analysis;
+            const logs = response.control_logs_analysis;
+
+            analysisResult.innerHTML = `
+                <h4>Автоматический режим</h4>
+                <p><strong>Длины розыгрышей:</strong> ${formatValue(rally.rally_lengths)}</p>
+                <p><strong>Количество завершённых розыгрышей:</strong> ${rally.completed_rallies}</p>
+                <p><strong>Средняя длина розыгрыша:</strong> ${rally.average_rally_length}</p>
+                <p><strong>Максимальная длина розыгрыша:</strong> ${rally.max_rally_length}</p>
+
+                <h4>Ручное управление</h4>
+                <p><strong>Всего команд:</strong> ${logs.total_commands}</p>
+                <p><strong>Успешных команд:</strong> ${logs.success_commands}</p>
+                <p><strong>Команд с ошибкой:</strong> ${logs.error_commands}</p>
+            `;
+        },
+        error: function () {
+            analysisResult.textContent = "Ошибка при получении анализа данных";
+        }
+    });
+}
+
+
+analyzeDataButton.onclick = updateDataAnalysis;

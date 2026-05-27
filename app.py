@@ -249,5 +249,18 @@ def auto_rally():
     logger.save_auto_event(result)
     return jsonify(result)
 
+# Анализ данных из MongoDB
+@app.route("/analyze_data")
+def analyze_data():
+    rally_analysis = logger.analyze_rally_lengths()
+    control_logs_analysis = logger.analyze_control_logs()
+
+    result = {
+        "rally_analysis": rally_analysis,
+        "control_logs_analysis": control_logs_analysis
+    }
+
+    return jsonify(result)
+
 if __name__ == "__main__":
     app.run(debug=True)

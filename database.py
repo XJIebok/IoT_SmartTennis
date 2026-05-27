@@ -37,6 +37,65 @@ class DatabaseLogger:
 
         return str(result.inserted_id)
 
+    # Анализ базы данных автоматических событий
+    def analyze_rally_lengths(self):
+        events = self.auto_events_collection.find().sort("_id", 1)
+
+        rally_lengths = []
+        current_rally_length = 0
+
+        for event in events:
+            camera_event = event.get("camera_event", {})
+            hit_type = camera_event.get("hit_type")
+
+            point_to = event.get("point_to")
+
+            if hit_type == "racket":
+                current_rally_length += 1
+
+            if point_to is not None:
+                if current_rally_length > 0:
+                    rally_lengths.append(current_rally_length)
+
+                current_rally_length = 0
+
+        if len(rally_lengths) > 0:
+            average_rally_length = round(sum(rally_lengths) / len(rally_lengths), 2)
+            max_rally_length = max(rally_lengths)
+        else:
+            average_rally_length = 0
+            max_rally_length = 0
+
+        return {
+            "rally_lengths": rally_lengths,
+            "completed_rallies": len(rally_lengths),
+            "average_rally_length": average_rally_length,
+            "max_rally_length": max_rally_length
+        }
+
+    # Подсчёт и анализ успеха ручных команд
+    def analyze_control_logs(self):
+        logs = self.control_logs_collection.find()
+
+        total_commands = 0
+        success_commands = 0
+        error_commands = 0
+
+        for log in logs:
+            total_commands += 1
+
+            if log.get("result") == "success":
+                success_commands += 1
+
+            if log.get("result") == "error":
+                error_commands += 1
+
+        return {
+            "total_commands": total_commands,
+            "success_commands": success_commands,
+            "error_commands": error_commands
+        }
+
     def get_auto_events(self, limit: int = 10):
         events = self.auto_events_collection.find().sort("_id", -1).limit(limit)
 
